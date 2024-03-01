@@ -1,0 +1,8 @@
+This is my first work set. 
+
+I made a simple asteroid game. Firstly, you have you have to choose a level, 1,2,3 or 4. This will decide the difficulty level of the game. 
+When you have chosen a level, the game will start. You have to use w,a,s,d to move forward, left, back and right, respectively to control a spaceship.
+You goal will be to avoid the asteroids. There are also some decorative planets and stars. You points will accumulate with the amount of asteroids that you avoid. 
+
+
+Scratch link: https://scratch.mit.edu/projects/973545761/editor/ 
