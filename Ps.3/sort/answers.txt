@@ -1,0 +1,11 @@
+sort1 uses: Bubble
+
+How do you know?: Very fast in sorted and process of elimination.
+
+sort2 uses: mergesort
+
+How do you know?: Uses considrably less time with the random5000 compared to the rest of the sorting algorithms.
+
+sort3 uses: selection sort
+
+How do you know?: Random and sorted used same amount of time because big o = big omega

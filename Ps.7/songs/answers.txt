@@ -1,0 +1,1 @@
+If songs.db contains the top 100 songs of one listener from 2018, this would give insight in the music preferences of that individual. It can tell us about the genre, speed and tempo of the music. This method is however limited in calculating "aura". Adding more variables would make the calcuations more accurate.
