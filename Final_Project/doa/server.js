@@ -186,7 +186,7 @@ io.on('connection', (socket) => {
             console.log('User has already submitted selections:', name);
             return;
         }
-        if (isNameTaken(name) && !users[socket.id]) {
+        if (isNameTaken(name)) {
             socket.emit('name taken', { error: 'This name is already taken. Please choose another one.' });
         } else {
             users[socket.id] = { username: name, ready: false };
@@ -207,13 +207,11 @@ io.on('connection', (socket) => {
             if (areAllPlayersReady()) {
                 io.emit('start countdown');
                 startCountdown();
-                io.emit("countdown-started"); 
             }
         }
     });
 
     socket.on('cancel countdown', () => {
-        io.emit("countdown-canceled");
         if (users[socket.id] && users[socket.id].admin) {
             clearInterval(countdownInterval);
             io.emit('cancel countdown');
@@ -401,7 +399,6 @@ function areAllPlayersReady() {
 }
 
 function startCountdown() {
-
     let countdown = 10;
     io.emit('update countdown', { countdown });
     countdownInterval = setInterval(() => {

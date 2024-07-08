@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "socketId": "6bsMzvE5UOkZGKq6AAAH",
+    "person1": "Morgan Freeman",
+    "status1": "Alive",
+    "person2": "Kevin Hart",
+    "status2": "Alive",
+    "person3": "Jim Parsons",
+    "status3": "Alive",
+    "username": "4"
+  },
+  {
+    "socketId": "_MV7URQc-KixyUNFAAAG",
+    "person1": "Tom Hanks",
+    "status1": "Alive",
+    "person2": "Jim Parsons",
+    "status2": "Alive",
+    "person3": "Morgan Freeman",
+    "status3": "Alive",
+    "username": "3"
+  }
+]

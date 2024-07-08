@@ -82,14 +82,6 @@
                 socket.emit('toggle ready');
             });
 
-            socket.on("countdown-started", function () {
-                document.getElementById('toggle-ready').style.display = 'none';;
-            });
-
-            socket.on("countdown-canceled", function () {
-                document.getElementById('toggle-ready').style.display = 'block';;
-            });
-
             document.getElementById('cancel-change').addEventListener('click', function () {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('lobby').style.display = 'block';
