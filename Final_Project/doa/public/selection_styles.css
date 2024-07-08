@@ -1,0 +1,95 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+#selection-container {
+    max-width: 600px;
+    width: 100%;
+    padding: 30px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.person {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.person label {
+    font-size: 1.1em;
+    margin-right: 10px;
+    color: #555;
+}
+
+.person input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    margin-right: 10px;
+}
+
+.status-btn {
+    background-color: #ccc;
+    border: 1px solid #ccc;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-right: 5px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.status-btn:last-child {
+    margin-right: 0;
+}
+
+.status-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.status-btn.selected {
+    color: #fff;
+}
+
+.status-btn.alive.selected {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.status-btn.dead.selected {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+button[type="submit"] {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: #fff;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button[type="submit"]:hover {
+    background-color: #0056b3;
+}

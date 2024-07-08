@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selection</title>
+    <link rel="stylesheet" href="/selection_styles.css">
+</head>
+
+<body>
+    <div id="selection-container">
+        <h1>Enter Your Selections</h1>
+        <form id="selection-form">
+            <div class="person">
+                <label for="person1">Person 1:</label>
+                <input type="text" id="person1" name="person1" required>
+                <input type="hidden" id="person1-id" name="person1-id">
+                <button type="button" id="status1-alive" class="status-btn alive" data-status="alive">😇</button>
+                <button type="button" id="status1-dead" class="status-btn dead" data-status="dead">💀</button>
+                <input type="hidden" id="status1" name="status1" required>
+                <button type="button" id="random1" class="random-btn">Random</button>
+            </div>
+            <div class="person">
+                <label for="person2">Person 2:</label>
+                <input type="text" id="person2" name="person2" required>
+                <input type="hidden" id="person2-id" name="person2-id">
+                <button type="button" id="status2-alive" class="status-btn alive" data-status="alive">😇</button>
+                <button type="button" id="status2-dead" class="status-btn dead" data-status="dead">💀</button>
+                <input type="hidden" id="status2" name="status2" required>
+                <button type="button" id="random2" class="random-btn">Random</button>
+            </div>
+            <div class="person">
+                <label for="person3">Person 3:</label>
+                <input type="text" id="person3" name="person3" required>
+                <input type="hidden" id="person3-id" name="person3-id">
+                <button type="button" id="status3-alive" class="status-btn alive" data-status="alive">😇</button>
+                <button type="button" id="status3-dead" class="status-btn dead" data-status="dead">💀</button>
+                <input type="hidden" id="status3" name="status3" required>
+                <button type="button" id="random3" class="random-btn">Random</button>
+            </div>
+            <button type="submit">Submit Selections</button>
+        </form>
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const socket = io();
+
+            function setupStatusButtons(personNumber) {
+                const aliveButton = document.getElementById(`status${personNumber}-alive`);
+                const deadButton = document.getElementById(`status${personNumber}-dead`);
+                const hiddenInput = document.getElementById(`status${personNumber}`);
+
+                function setStatus(status) {
+                    hiddenInput.value = status;
+                    aliveButton.classList.toggle('selected', status === 'alive');
+                    deadButton.classList.toggle('selected', status === 'dead');
+                }
+
+                aliveButton.addEventListener('click', () => setStatus('alive'));
+                deadButton.addEventListener('click', () => setStatus('dead'));
+            }
+
+            function setupRandomButton(personNumber) {
+                const randomButton = document.getElementById(`random${personNumber}`);
+                randomButton.addEventListener('click', () => assignRandomPerson(personNumber));
+            }
+
+            function fetchRandomPerson() {
+                return fetch('http://10.0.0.18:8080/random')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to fetch random person data.');
+                    });
+            }
+
+            function assignRandomPerson(personNumber) {
+                fetchRandomPerson()
+                    .then(data => {
+                        if (data && data.personName && data.personStatus && data.personID !== undefined) {
+                            const personInputs = [1, 2, 3].map(num => document.getElementById(`person${num}`).value);
+
+                            if (!personInputs.includes(data.personName)) {
+                                const personInput = document.getElementById(`person${personNumber}`);
+                                const personIdInput = document.getElementById(`person${personNumber}-id`);
+                                const statusInput = document.getElementById(`status${personNumber}`);
+                                const aliveButton = document.getElementById(`status${personNumber}-alive`);
+                                const deadButton = document.getElementById(`status${personNumber}-dead`);
+                                const randomButton = document.getElementById(`random${personNumber}`);
+
+                                personInput.value = data.personName;
+                                personIdInput.value = data.personID;
+                                statusInput.value = data.personStatus;
+
+                                if (data.personStatus === 'Alive') {
+                                    aliveButton.classList.add('selected');
+                                    deadButton.classList.remove('selected');
+                                    randomButton.classList.add('green');
+                                } else if (data.personStatus === 'Dead') {
+                                    deadButton.classList.add('selected');
+                                    aliveButton.classList.remove('selected');
+                                    randomButton.classList.remove('green');
+                                }
+                            } else {
+                                assignRandomPerson(personNumber);
+                            }
+                        } else {
+                            console.error('Invalid data:', data);
+                        }
+                    });
+            }
+
+            [1, 2, 3].forEach(setupStatusButtons);
+            [1, 2, 3].forEach(setupRandomButton);
+
+            document.getElementById('selection-form').addEventListener('submit', function (event) {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                const data = {};
+                let allStatusSelected = true;
+
+                formData.forEach((value, key) => {
+                    data[key] = value;
+                    if (key.startsWith('status') && !value) {
+                        allStatusSelected = false;
+                        document.getElementById(key).closest('.person').classList.add('error');
+                    } else {
+                        document.getElementById(key).closest('.person').classList.remove('error');
+                    }
+                });
+
+                if (!allStatusSelected) {
+                    alert('Please select a status for all persons.');
+                    return;
+                }
+
+                // Retrieve the username from cookies
+                const cookies = document.cookie.split(';').reduce((cookieObj, cookieStr) => {
+                    const [key, value] = cookieStr.trim().split('=');
+                    cookieObj[key] = value;
+                    return cookieObj;
+                }, {});
+
+                data.username = cookies.username;
+
+                socket.emit('submitSelections', data);
+            });
+
+            socket.on('everyone submitted', function () {
+                console.log('Everyone submitted event received');
+                window.location.href = '/guessing';
+            });
+
+            socket.on('redirect', (url) => {
+                window.location.href = url;
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoreboard</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+    <div id="scoreboard-container">
+        <h1>Scoreboard</h1>
+        <div id="scoreboard"></div>
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const socket = io();
+            const scoreboardContainer = document.getElementById('scoreboard');
+
+            socket.emit('request scoreboard');
+
+            socket.on('scoreboard data', (data) => {
+                renderScoreboard(data);
+            });
+
+            function renderScoreboard(data) {
+                scoreboardContainer.innerHTML = data.map(user => `
+                    <div class="user-score">
+                        <h2>${user.username}</h2>
+                        <p>Score: ${user.points}</p>
+                    </div>
+                `).join('');
+            }
+        });
+    </script>
+</body>
+
+</html>

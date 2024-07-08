@@ -1,0 +1,14 @@
+{
+  "3": {
+    "Morgan Freeman": "alive",
+    "Kevin Hart": "alive",
+    "Jim Parsons": "alive",
+    "Tom Hanks": "alive"
+  },
+  "4": {
+    "Morgan Freeman": "dead",
+    "Kevin Hart": "dead",
+    "Jim Parsons": "dead",
+    "Tom Hanks": "dead"
+  }
+}

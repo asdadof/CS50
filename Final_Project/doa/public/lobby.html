@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Lobby</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+    <div id="container">
+        <div id="login" class="active">
+            <h1>Enter Your Name</h1>
+            <input id="username" placeholder="Username" />
+            <button id="join">Join Lobby</button>
+            <button id="cancel-change" style="display:none;">Cancel</button>
+            <p id="error-message" style="color: red; display: none;"></p>
+        </div>
+
+        <div id="lobby" style="display:none;">
+            <div id="admin-ribbon" class="ribbon" style="display:none;">Admin</div>
+            <h1>Lobby</h1>
+            <div id="user-list"></div>
+            <button id="change-name">Change Name</button>
+            <button id="toggle-ready">Ready</button>
+            <button id="skip-countdown" style="display:none;">Skip Countdown</button>
+            <p>Your name is: <span id="userName"></span></p>
+            <p id="countdown" style="display:none;">Game starts in: <span id="timer">10</span> seconds</p>
+            <button id="cancel-countdown" style="display:none;">Cancel Countdown</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const socket = io();
+            let isCountdownActive = false;
+            let countdownInterval;
+            let isAdmin = false;
+
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+
+            function deleteCookie(name) {
+                document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/';
+            }
+
+            const username = getCookie('username');
+            const adminStatus = getCookie('admin');
+
+            if (username) {
+                document.getElementById('username').value = username;
+                socket.emit('set name', { name: username });
+            }
+
+            if (adminStatus === 'true') {
+                isAdmin = true;
+                document.getElementById('admin-ribbon').style.display = 'block';
+            }
+
+            document.getElementById('join').addEventListener('click', function () {
+                const name = document.getElementById('username').value;
+                if (name) {
+                    document.cookie = `username=${name}; path=/`;
+                    socket.emit('set name', { name: name });
+                } else {
+                    displayError("Please enter a username.");
+                }
+            });
+
+            document.getElementById('change-name').addEventListener('click', function () {
+                document.getElementById('lobby').style.display = 'none';
+                document.getElementById('login').style.display = 'block';
+                document.getElementById('cancel-change').style.display = 'inline';
+            });
+
+            document.getElementById('toggle-ready').addEventListener('click', function () {
+                socket.emit('toggle ready');
+            });
+
+            socket.on("countdown-started", function () {
+                document.getElementById('toggle-ready').style.display = 'none';;
+            });
+
+            socket.on("countdown-canceled", function () {
+                document.getElementById('toggle-ready').style.display = 'block';;
+            });
+
+            document.getElementById('cancel-change').addEventListener('click', function () {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('lobby').style.display = 'block';
+                document.getElementById('cancel-change').style.display = 'none';
+            });
+
+            document.getElementById('cancel-countdown').addEventListener('click', function () {
+                if (isCountdownActive) {
+                    socket.emit('cancel countdown');
+                }
+            });
+
+            document.getElementById('skip-countdown').addEventListener('click', function () {
+                socket.emit('skip countdown');
+            });
+
+            socket.on('set cookie', (data) => {
+                document.cookie = `username=${data.username};path=/`;
+                if (data.admin !== undefined) {
+                    document.cookie = `admin=${data.admin};path=/`;
+                }
+            });
+
+            socket.on('everyone submitted', function () {
+                console.log('Everyone submitted event received');
+                window.location.href = '/guessing';
+            });
+
+            socket.on('name taken', function (data) {
+                displayError(data.error);
+            });
+
+            socket.on('redirect to lobby', function () {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('lobby').style.display = 'block';
+            });
+
+            socket.on('user list', function (users) {
+                updateUserList(users);
+            });
+
+            socket.on('start countdown', function () {
+                startCountdown();
+            });
+
+            socket.on('update countdown', function (data) {
+                updateCountdown(data.countdown);
+            });
+
+            socket.on('cancel countdown', function () {
+                cancelCountdown();
+            });
+
+            socket.on('kicked', function () {
+                deleteCookie('username');
+                deleteCookie('admin');
+                window.location.href = '/';
+            });
+
+            function displayError(message) {
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.innerText = message;
+                errorMessage.style.display = 'block';
+            }
+
+            function updateUserList(users) {
+                const userList = document.getElementById('user-list');
+                userList.innerHTML = '';
+                const currentUser = users.find(user => user.socketId === socket.id);
+                isAdmin = currentUser && currentUser.admin;
+
+                users.forEach(function (user) {
+                    const userElement = document.createElement('div');
+                    userElement.classList.add('user');
+                    userElement.innerText = `${user.username} ${user.ready ? '✅' : '❌'}`;
+
+                    if (isAdmin && user.socketId !== socket.id) {
+                        const kickButton = document.createElement('button');
+                        kickButton.innerText = 'Kick';
+                        kickButton.addEventListener('click', function () {
+                            socket.emit('kick user', { socketId: user.socketId });
+                        });
+                        userElement.appendChild(kickButton);
+                    }
+
+                    userList.appendChild(userElement);
+                });
+
+                document.getElementById('error-message').style.display = 'none';
+
+                if (currentUser) {
+                    document.getElementById('userName').textContent = currentUser.username;
+                    if (currentUser.admin) {
+                        document.getElementById('admin-ribbon').style.display = 'block';
+                        if (isCountdownActive) {
+                            document.getElementById('cancel-countdown').style.display = 'block';
+                            document.getElementById('skip-countdown').style.display = 'block';
+                        }
+                    } else {
+                        document.getElementById('admin-ribbon').style.display = 'none';
+                    }
+                }
+            }
+
+            function startCountdown() {
+                const countdownElement = document.getElementById('countdown');
+                const timerElement = document.getElementById('timer');
+                let countdown = 10;
+                isCountdownActive = true;
+                countdownElement.style.display = 'block';
+                if (isAdmin) {
+                    document.getElementById('skip-countdown').style.display = 'block';
+                }
+                if (document.getElementById('admin-ribbon').style.display === 'block') {
+                    document.getElementById('cancel-countdown').style.display = 'block';
+                }
+
+                countdownInterval = setInterval(function () {
+                    countdown -= 1;
+                    timerElement.innerText = countdown;
+                    if (countdown <= 0) {
+                        clearInterval(countdownInterval);
+                        window.location.href = '/selection';
+                    }
+                }, 1000);
+            }
+
+            function updateCountdown(time) {
+                const timerElement = document.getElementById('timer');
+                timerElement.innerText = time;
+                if (time <= 0) {
+                    clearInterval(countdownInterval);
+                    window.location.href = '/selection';
+                }
+            }
+
+            function cancelCountdown() {
+                clearInterval(countdownInterval);
+                isCountdownActive = false;
+                document.getElementById('countdown').style.display = 'none';
+                document.getElementById('cancel-countdown').style.display = 'none';
+                document.getElementById('skip-countdown').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+
+</html>

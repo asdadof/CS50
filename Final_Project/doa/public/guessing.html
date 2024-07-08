@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guessing</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+    <div id="guessing-container">
+        <h1>Guess if the person is dead or alive</h1>
+        <div id="submission"></div>
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        
+    document.addEventListener('DOMContentLoaded', function () {
+        const socket = io();
+        const submissionContainer = document.getElementById('submission');
+        let guessedPersons = {};
+
+        socket.on('next person', (data) => {
+            const personName = data.personName;
+            if (guessedPersons[personName]) {
+                socket.emit('request next person');
+            } else {
+                renderPerson(personName);
+            }
+        });
+
+        function renderPerson(personName) {
+            submissionContainer.innerHTML = `
+            <h2>${personName}</h2>
+            <button class="guess-btn" data-person-name="${personName}" data-guess="alive">😇 Alive</button>
+            <button class="guess-btn" data-person-name="${personName}" data-guess="dead">💀 Dead</button>
+        `;
+
+            document.querySelectorAll('.guess-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const guess = this.dataset.guess;
+                    guessedPersons[personName] = true;
+
+                    const username = getUsernameFromCookie();
+                    socket.emit('submitGuess', { username, personName, guess });
+                });
+            });
+        }
+
+        function getUsernameFromCookie() {
+            const cookies = document.cookie.split(';').reduce((cookieObj, cookieStr) => {
+                const [key, value] = cookieStr.trim().split('=');
+                cookieObj[key] = value;
+                return cookieObj;
+            }, {});
+            return cookies.username;
+        }
+
+        socket.emit('request next person');
+
+        socket.on('all guesses completed', () => {
+            window.location.href = '/scoreboard';
+        });
+    });
+
+
+
+
+</script> 
