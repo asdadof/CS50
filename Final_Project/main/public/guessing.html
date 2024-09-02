@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guessing</title>
+    <link rel="stylesheet" href="/css/global.css">
+    <link rel="stylesheet" href="/css/guessing.css">
+</head>
+
+<body>
+
+    <div id="guessing-container">
+        <div id="admin-ribbon" class="ribbon">Admin</div>
+        <button id="Post-to-api">Add</button>
+        <h2 id="under-title">Guess if the person is dead or alive</h2>
+        <div id="submission"></div>
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        
+    document.addEventListener('DOMContentLoaded', function () {
+        const socket = io();
+        const submissionContainer = document.getElementById('submission');
+        let guessedPersons = {};
+
+        const adminStatus = getCookie('admin');
+        const adminRibbon = document.getElementById('admin-ribbon');
+        const addButton = document.getElementById('Post-to-api');
+
+        if (adminStatus === 'true') {
+            adminRibbon.style.display = 'block';
+            addButton.style.display = 'block';
+        } else {
+            addButton.style.display = 'none';
+            adminRibbon.style.display = 'none';
+        }
+
+        addButton.addEventListener('click', function () {
+            fetch('./data/submissions.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const personNameElement = document.getElementById('person-name');
+
+                    if (personNameElement) {
+                        const personName = personNameElement.innerText;
+                        let person = null;
+
+                        for (const submission of data) {
+                            console.log(submission.person1);
+                            if (submission.person1 === personName) {
+                                person = {
+                                    personName: submission.person1,
+                                    personStatus: submission.status1,
+                                };
+                                break;
+                            } else if (submission.person2 === personName) {
+                                person = {
+                                    personName: submission.person2,
+                                    personStatus: submission.status2,
+                                };
+                                break;
+                            } else if (submission.person3 === personName) {
+                                person = {
+                                    personName: submission.person3,
+                                    personStatus: submission.status3,
+                                };
+                                break;
+                            }
+                        }
+
+                        if (person) {
+                            console.log(JSON.stringify(person))
+                            postPerson(person);
+                        } else {
+                            console.log('person:', person)
+                            console.error('Person not found in data');
+                        }
+                    } else {
+                        console.error('Person name element not found');
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                });
+        });
+
+        function postPerson(person) {
+            fetch('http://0.0.0.0:8080/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(person),
+            })
+                .then(response => response.json())
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        }
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        socket.on('next person', (data) => {
+            const personName = data.personName;
+            if (guessedPersons[personName]) {
+                socket.emit('request next person');
+            } else {
+                renderPerson(personName);
+            }
+        });
+
+        function renderPerson(personName) {
+            submissionContainer.innerHTML = `
+            <h2 id="person-name">${personName}</h2>
+            <button class="guess-btn" data-person-name="${personName}" data-guess="alive">😇 Alive</button>
+            <button class="guess-btn" data-person-name="${personName}" data-guess="dead">💀 Dead</button>
+        `;
+
+            document.querySelectorAll('.guess-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const guess = this.dataset.guess;
+                    guessedPersons[personName] = true;
+
+                    const username = getUsernameFromCookie();
+                    socket.emit('submitGuess', { username, personName, guess });
+                });
+            });
+        }
+
+        function getUsernameFromCookie() {
+            const cookies = document.cookie.split(';').reduce((cookieObj, cookieStr) => {
+                const [key, value] = cookieStr.trim().split('=');
+                cookieObj[key] = value;
+                return cookieObj;
+            }, {});
+            return cookies.username;
+        }
+
+        socket.emit('request next person');
+
+        socket.on('all guesses completed', () => {
+            window.location.href = '/scoreboard';
+        });
+    });
+
+
+
+
+</script> 

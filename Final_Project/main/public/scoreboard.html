@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoreboard</title>
+    <link rel="stylesheet" href="/css/scoreboard.css">
+    <link rel="stylesheet" href="/css/global.css">
+</head>
+
+<body>
+<div id="scoreboard-container">
+    <h1>Scoreboard</h1>
+    <div id="podium">
+        <div id="second" class="podium-place"></div>
+        <div id="first" class="podium-place"></div>
+        <div id="third" class="podium-place"></div>
+    </div>
+    <div id="scoreboard"></div>
+</div>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const socket = io();
+        const scoreboardContainer = document.getElementById('scoreboard');
+        const podium = {
+            first: document.getElementById('first'),
+            second: document.getElementById('second'),
+            third: document.getElementById('third')
+        };
+
+        socket.emit('request scoreboard');
+
+        socket.on('scoreboard data', (data) => {
+            renderScoreboard(data);
+        });
+
+        function renderScoreboard(data) {
+            data.sort((a, b) => b.points - a.points);
+
+            const top3 = data.slice(0, 3);
+            const rest = data.slice(3);
+
+            const positions = ['third', 'second', 'first'];
+
+            if (top3.length < 3) {
+                positions.splice(0, 3 - top3.length);
+            }
+
+            top3.reverse().forEach((user, index) => {
+                setTimeout(() => {
+                    if (index < top3.length) {
+                        podium[positions[index]].innerHTML = `
+                            <h2>${user.username}</h2>
+                            <p>Score: ${user.points}</p>
+                        `;
+                        podium[positions[index]].style.opacity = 1;
+                        podium[positions[index]].style.transform = 'translateY(0)';
+                    }
+                }, index * 1000);
+            });
+
+            scoreboardContainer.innerHTML += '<h3>Other Players</h3>';
+            setTimeout(() => {
+                rest.forEach(user => {
+                    scoreboardContainer.innerHTML += `
+                        <div class="user-score">
+                            <h2>${user.username}</h2>
+                            <p>Score: ${user.points}</p>
+                        </div>
+                    `;
+                });
+            }, top3.length * 1000);
+        }
+    });
+</script>
+</body>
+
+</html>
